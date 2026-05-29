@@ -1,0 +1,56 @@
+{
+  "spec_id": "f5d6_handd",
+  "spec_version": "0.1.0",
+  "channels": {
+    "robot": {
+      "state": {
+        "left_hand": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [6], "dtype": "float32"}
+          },
+          "wrench": {
+            "force": {
+              "unit": "N",
+              "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+            },
+            "torque": {
+              "unit": "Nm",
+              "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+            }
+          }
+        },
+        "right_hand": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [6], "dtype": "float32"}
+          },
+          "wrench": {
+            "force": {
+              "unit": "N",
+              "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+            },
+            "torque": {
+              "unit": "Nm",
+              "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+            }
+          }
+        }
+      },
+      "action": {
+        "left_hand": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [6], "dtype": "float32"}
+          }
+        },
+        "right_hand": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [6], "dtype": "float32"}
+          }
+        }
+      }
+    }
+  }
+}

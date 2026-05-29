@@ -1,0 +1,44 @@
+# Pointed conversion config for vega_1u + dex_gripper episodes
+# → LeRobot v2.1 dataset.
+#
+# Groups (state / action / camera) are organisational sugar only — on
+# load they flatten to a single {composable_path: canonical_key} map
+# with `canonical_key = "{group.prefix}.{group.features[path]}"`.
+# Container type (RGB vs depth vs numeric) is read from the Spec
+# attached to each topic, not from the names here.
+
+rgb:   {codec: libx264, pix_fmt: yuv420p, crf: 23, gop: 2, out_hw: [400, 640]}
+depth: {codec: libx264, pix_fmt: yuv420p, crf: 23, gop: 2, clip_m: [0.2, 1.2], out_hw: [400, 640]}
+
+state:
+  prefix: observation.state
+  features:
+    /robot/state/left_arm/qpos:           left_arm.abs_qpos
+    /robot/state/left_arm/qvel:           left_arm.qvel
+    /robot/state/right_arm/qpos:          right_arm.abs_qpos
+    /robot/state/right_arm/qvel:          right_arm.qvel
+    /robot/state/left_hand/qpos:          left_hand.abs_qpos
+    /robot/state/right_hand/qpos:         right_hand.abs_qpos
+    /robot/state/left_hand/wrench/force:  left_wrist_wrench.force
+    /robot/state/left_hand/wrench/torque: left_wrist_wrench.torque
+    /robot/state/right_hand/wrench/force: right_wrist_wrench.force
+    /robot/state/right_hand/wrench/torque: right_wrist_wrench.torque
+
+action:
+  prefix: action
+  features:
+    /robot/action/left_arm/qpos:   left_arm.abs_qpos
+    /robot/action/right_arm/qpos:  right_arm.abs_qpos
+    /robot/action/left_hand/qpos:  left_hand.abs_qpos
+    /robot/action/right_hand/qpos: right_hand.abs_qpos
+
+camera:
+  prefix: observation.images
+  features:
+    /camera/head_left/rgb/video:   head_left.rgb
+    /camera/head_right/rgb/video:  head_right.rgb
+    /camera/left_wrist/rgb/video:  left_wrist.rgb
+    /camera/right_wrist/rgb/video: right_wrist.rgb
+    # Head depth already lives under head_left (spec 0.2.0), so a single
+    # `selected_cameras: [head_left]` config works downstream.
+    # /camera/head_left/depth:       head_left.depth

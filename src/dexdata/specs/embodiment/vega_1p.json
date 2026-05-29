@@ -1,0 +1,7 @@
+{
+  "spec_id": "vega_1p",
+  "spec_version": "0.2.0",
+  "includes": [
+    "../module/humanoid/vega_1p.json"
+  ]
+}

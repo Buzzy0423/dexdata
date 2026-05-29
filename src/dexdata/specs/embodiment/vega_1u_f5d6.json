@@ -1,0 +1,8 @@
+{
+  "spec_id": "vega_1u_f5d6",
+  "spec_version": "0.2.0",
+  "includes": [
+    "../module/humanoid/vega_1u.json",
+    "../module/hands/f5d6_hand.json"
+  ]
+}

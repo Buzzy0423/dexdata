@@ -1,0 +1,90 @@
+{
+  "spec_id": "vega_1u",
+  "spec_version": "0.2.0",
+  "channels": {
+    "robot": {
+      "state": {
+        "left_arm": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          },
+          "qvel": {
+            "unit": "rad/s",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          }
+        },
+        "right_arm": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          },
+          "qvel": {
+            "unit": "rad/s",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          }
+        },
+        "head": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+          }
+        }
+      },
+      "action": {
+        "left_arm": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          }
+        },
+        "right_arm": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [7], "dtype": "float32"}
+          }
+        },
+        "head": {
+          "qpos": {
+            "unit": "rad",
+            "container": {"type": "NumericArray", "shape": [3], "dtype": "float32"}
+          }
+        }
+      }
+    },
+    "camera": {
+      "head_left": {
+        "rgb": {
+          "video": {
+            "unit": "bgr",
+            "container": {
+              "type": "foxglove.CompressedVideo",
+              "codec": "av1",
+              "crf": 28,
+              "gop": 10,
+              "preset": "8"
+            }
+          }
+        },
+        "depth": {
+          "unit": "m",
+          "container": {"type": "DepthImage"}
+        }
+      },
+      "head_right": {
+        "rgb": {
+          "video": {
+            "unit": "bgr",
+            "container": {
+              "type": "foxglove.CompressedVideo",
+              "codec": "av1",
+              "crf": 28,
+              "gop": 10,
+              "preset": "8"
+            }
+          }
+        }
+      }
+    }
+  }
+}

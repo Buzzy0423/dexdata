@@ -1,0 +1,114 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dexdata"
+version = "0.1.0"
+description = "Data recording and replay utilities for Dexmate robots (MCAP + video)"
+authors = [{ name = "Dexmate", email = "contact@dexmate.ai" }]
+readme = "README.md"
+license = {text = "AGPL-3.0"}
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+]
+keywords = ["robot", "mcap", "dataset", "teleoperation", "dexmate"]
+
+dependencies = [
+    # MCAP + protobuf serialization (we use bare `mcap` + generated pb2
+    # modules directly; no mcap-protobuf-support helper is needed).
+    "mcap>=1.2.0",
+    "protobuf>=5.0.0",
+    # Pre-compiled foxglove proto schemas for our CompressedVideo / Pose
+    # / PointCloud / DepthImage handlers.
+    "foxglove-schemas-protobuf>=0.3.0",
+    # Numerics / imaging
+    "numpy>=2.0.0",
+    "opencv-python>=4.5.0",
+    "Pillow>=10.0.0",
+    # Video I/O
+    "av>=12.0.0",
+    # Logging / retries
+    "loguru>=0.7.0",
+    "tenacity>=9.1.2",
+    "tyro>=0.9.0",
+    # UUIDv7 (stdlib uuid7 lands in 3.14; this package backfills it)
+    "uuid6>=2024.7.10",
+    # Visualization
+    "rerun-sdk>=0.20.0",
+    "tqdm>=4.65.0",
+    "matplotlib>=3.7.0",
+    # YAML config for exporters
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+convert = [
+    "torch==2.7.1",
+    "pandas>=2.0.0",
+    "pyarrow>=14.0.0",
+    "jsonlines>=4.0.0",
+]
+
+[project.scripts]
+dexdata-viz = "dexdata.viz.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"dexdata.mcap_utils.proto" = ["*.proto", "compile_proto.sh"]
+"dexdata.specs" = ["*.json"]
+"dexdata.specs.embodiment" = ["*.json"]
+"dexdata.specs.module" = ["**/*.json"]
+"dexdata.exporters.config" = ["*.yaml"]
+
+[tool.uv]
+index-url = "https://pypi.org/simple"
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+index-strategy = "unsafe-best-match"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+extend-exclude = [
+    "*_pb2.py",
+    "*_pb2.pyi",
+    "src/dexdata/mcap_utils/proto",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = ["F401"]
+"src/dexdata/converters/legacy.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[dependency-groups]
+dev = [
+    "pre-commit",
+    "ruff",
+    "ipdb",
+    "pytest",
+    "pytest-cov",
+]

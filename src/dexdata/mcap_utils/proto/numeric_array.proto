@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package dexdata.composable;
+
+// Catch-all container for any N-dim numeric tensor signal.
+//
+// `data` is `arr.tobytes()` in C-order (numpy default). The dtype and shape
+// are stored once in MCAP channel metadata at register time, not repeated
+// per message.
+//
+// Per-message timestamps live on the MCAP envelope (publish_time / log_time,
+// decision 2.13), not in this proto. The bare-bytes wrapper exists for
+// schema naming in the MCAP channel summary and for non-breaking field
+// additions later.
+message NumericArray {
+  bytes data = 1;
+}

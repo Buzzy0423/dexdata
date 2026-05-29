@@ -1,0 +1,56 @@
+{
+  "spec_id": "all_container_types",
+  "spec_version": "0.1.0",
+  "channels": {
+    "robot": {
+      "state": {
+        "left_arm": {
+          "qpos": {
+            "unit": "rad",
+            "container": {
+              "type": "NumericArray",
+              "shape": [7],
+              "dtype": "float32"
+            }
+          }
+        }
+      }
+    },
+    "camera": {
+      "head_left": {
+        "rgb": {
+          "unit": "rgb",
+          "container": {
+            "type": "foxglove.CompressedVideo",
+            "codec": "av1",
+            "crf": 28,
+            "gop": 10,
+            "preset": "8"
+          }
+        },
+        "depth": {
+          "unit": "m",
+          "container": {
+            "type": "DepthImage"
+          }
+        }
+      }
+    },
+    "lidar": {
+      "front_lidar": {
+        "point": {
+          "unit": "m",
+          "container": {
+            "type": "foxglove.PointCloud"
+          }
+        },
+        "imu": {
+          "unit": "SE3",
+          "container": {
+            "type": "foxglove.Pose"
+          }
+        }
+      }
+    }
+  }
+}

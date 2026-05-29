@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package dexdata.composable;
+
+// Depth image container — lossless PNG-16 payload (DESIGN §3.3).
+//
+// `data` is a PNG-16 (single-channel uint16) blob. Quantization parameters
+// (`min_range`, `max_range` in meters) live in MCAP channel metadata, set
+// by the writer at register time from the depth sensor's published range.
+// Invalid pixels are encoded as uint16 0; the 65535 valid codes (1..65535)
+// span [min_range, max_range] linearly.
+//
+// Per-message timestamps live on the MCAP envelope (publish_time / log_time,
+// decision 2.13), not in this proto.
+message DepthImage {
+  bytes data = 1;
+}
