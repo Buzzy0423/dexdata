@@ -45,10 +45,12 @@ from __future__ import annotations
 
 import gc
 import logging
+import os
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import numpy as np
 
@@ -87,6 +89,31 @@ def visualize_episode(
 
     rr.init(app_name, spawn=False)
     gc.collect()
+
+    web_viewer_url: str | None = None
+    if not save and mode == "distant":
+        recording = rr.get_global_data_recording()
+        if recording is None:
+            raise RuntimeError("Rerun recording was not initialized")
+
+        grpc_port = int(os.environ.get("DEXDATA_RERUN_GRPC_PORT", "9876"))
+        web_port = int(os.environ.get("DEXDATA_RERUN_WEB_PORT", "9090"))
+        server_memory_limit = os.environ.get(
+            "DEXDATA_RERUN_SERVER_MEMORY_LIMIT", "4GiB"
+        )
+        server_uri = recording.serve_grpc(
+            grpc_port=grpc_port,
+            server_memory_limit=server_memory_limit,
+        )
+        rr.serve_web_viewer(
+            web_port=web_port,
+            open_browser=False,
+            connect_to=server_uri,
+        )
+        web_viewer_url = (
+            f"http://localhost:{web_port}/?url={quote(server_uri, safe='')}"
+        )
+        logger.info(f"Rerun web viewer: {web_viewer_url}")
 
     spec = episode.spec
     blueprint = _build_blueprint(spec, rrb)
@@ -150,8 +177,9 @@ def visualize_episode(
     if mode == "local":
         return _spawn_viewer_with_temp_recording(rr)
     if mode == "distant":
-        rr.serve_web(open_browser=False)
-        logger.info("Serving Rerun web viewer (Ctrl+C to exit).")
+        logger.info(
+            f"Serving Rerun web viewer at {web_viewer_url} (Ctrl+C to exit)."
+        )
         try:
             import time
 
@@ -215,10 +243,10 @@ def _log_numeric_array(rr: Any, topic: str, arr: np.ndarray, ts: np.ndarray) -> 
         )
 
 
-# Arrow's Binary column type uses i32 byte offsets (~2.1 GB cap).
-# Each send_columns Image batch must fit under that; we chunk along T
-# so per-batch total bytes stay ~1 GB regardless of episode length.
-_IMAGE_CHUNK_BYTES = 1_000_000_000
+# Keep image chunks small enough for live gRPC/Web transport. Large recordings
+# can otherwise become a single several-hundred-MiB message that never reaches
+# the viewer, even though saving the same recording to an RRD file succeeds.
+_IMAGE_CHUNK_BYTES = 64 * 1024 * 1024
 
 
 def _image_chunk_size(H: int, W: int, C: int) -> int:
@@ -269,13 +297,55 @@ def _send_image_columns(
 
 
 def _log_video(rr: Any, topic: str, arr: np.ndarray, ts: np.ndarray) -> None:
-    """Log a (T, H, W, 3) RGB uint8 stack columnarly in i32-safe chunks.
+    """Log a (T, H, W, 3) RGB uint8 stack as JPEG-encoded image columns.
 
     The composable ``CompressedVideo`` handler decodes to RGB directly,
-    so we pass the buffer straight through with ``color_model="RGB"``
-    — no swap, no per-camera memcpy.
+    but sending raw RGB makes even short recordings several GiB in the
+    web viewer. JPEG encoding keeps remote visualization practical without
+    changing the source MCAP recording.
     """
-    _send_image_columns(rr, topic, arr, ts, color_model="RGB")
+    import cv2
+
+    quality = int(os.environ.get("DEXDATA_RERUN_JPEG_QUALITY", "90"))
+    color_order = os.environ.get(
+        "DEXDATA_RERUN_VIDEO_COLOR_ORDER", "RGB"
+    ).upper()
+    if color_order not in {"RGB", "BGR"}:
+        raise ValueError(
+            "DEXDATA_RERUN_VIDEO_COLOR_ORDER must be RGB or BGR"
+        )
+    encode_params = [cv2.IMWRITE_JPEG_QUALITY, quality]
+    batch_size = 64
+
+    for t0 in range(0, arr.shape[0], batch_size):
+        t1 = min(t0 + batch_size, arr.shape[0])
+        blobs: list[bytes] = []
+        for frame in arr[t0:t1]:
+            bgr = (
+                cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                if color_order == "RGB"
+                else frame
+            )
+            ok, encoded = cv2.imencode(".jpg", bgr, encode_params)
+            if not ok:
+                raise RuntimeError(f"Failed to JPEG-encode frame for {topic}")
+            blobs.append(encoded.tobytes())
+
+        rr.send_columns(
+            entity_path=topic,
+            indexes=[
+                rr.TimeColumn(
+                    "timestamp", timestamp=ts[t0:t1].astype(np.float64) * 1e-9
+                ),
+                rr.TimeColumn(
+                    "frame_index", sequence=np.arange(t0, t1, dtype=np.int64)
+                ),
+            ],
+            columns=rr.EncodedImage.columns(
+                blob=blobs,
+                media_type=["image/jpeg"] * len(blobs),
+            ),
+        )
 
 
 def _log_depth(rr: Any, topic: str, arr: np.ndarray, ts: np.ndarray) -> None:
@@ -326,7 +396,11 @@ def _build_blueprint(spec: Any, rrb: Any) -> Any:
         topic = signal.topic
         ctype = signal.container.type_name
         if ctype in ("foxglove.CompressedVideo", "DepthImage"):
-            visual_views.append(rrb.Spatial2DView(name=topic, origin=topic))
+            # Images are logged on the origin entity itself. Rerun 0.33's
+            # default "$origin/**" query only includes descendants.
+            visual_views.append(
+                rrb.Spatial2DView(name=topic, origin=topic, contents=topic)
+            )
         elif ctype in ("NumericArray", "foxglove.Pose"):
             # Group scalar series by topic — one TimeSeriesView per signal.
             if topic not in seen_origins:
